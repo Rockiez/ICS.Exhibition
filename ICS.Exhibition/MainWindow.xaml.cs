@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,6 +17,7 @@ using System.Windows.Shapes;
 using ICS.Acquisition;
 using ICS.Models;
 using ICS.Common;
+using ICS.Models.Com;
 
 namespace ICS.Exhibition
 {
@@ -44,22 +46,22 @@ namespace ICS.Exhibition
 
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
-                var exHelper = new ExhibitionHelper(exhibitionLight, catchThief, policemen, haveThief, this, imgDoor.Name, imgDoor.Name);
+            var exHelper = new ExhibitionHelper(exhibitionLight, catchThief, policemen, haveThief, this, imgDoor.Name, imgDoor.Name);
 
-                LazyTimer timer = new LazyTimer( _sender =>
+            LazyTimer timer = new LazyTimer(_sender =>
+            {
+                LazyTimer t = (LazyTimer)_sender[0];
+                var statevalue = new ADAM4150(new ComSettingModel());
+                if (statevalue.CheckSerialPort(statevalue.ADAM4017Provider).Status ==
+                    RunStatus.Failure) return;
+
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    LazyTimer t = (LazyTimer)_sender[0];
+                    exHelper.OpenAlarm(statevalue.infraredValue);
+                });
+                t.Reset();
+            }, 100, 5000);
 
-                    if (Global.ADAM4150Provider.CheckSerialPort(Global.ADAM4150Provider.ADAM4017Provider).Status ==
-                        RunStatus.Failure) return;
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        exHelper.OpenAlarm(Global.ADAM4150Provider.infraredValue);
-
-                        t.Reset();
-                    });
-                }, 100, 5000);
-                exHelper.BindImageMargin(girdMain.Children);
             }
     }
 }
